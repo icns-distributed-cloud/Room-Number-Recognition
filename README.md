@@ -32,5 +32,5 @@ Room number recognition service for *indoor self-driving car*s. This service ana
 - Keras 2.3.1
 
 ## Todo
-- [] Complete the Dockerfile
-- [] Change implementation from Python to Go.
+- [ ] Complete the Dockerfile
+- [ ] Change implementation from Python to Go.
