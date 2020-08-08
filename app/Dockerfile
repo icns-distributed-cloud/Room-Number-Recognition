@@ -9,10 +9,12 @@ RUN mkdir /app
 WORKDIR /app
 
 # Install dependencies
-RUN apt-get -y update && apt-get -y upgrade && \
+RUN echo "deb [trusted=yes] http://ftp.kaist.ac.kr/raspbian/raspbian/ buster main contrib non-free rpi" | tee -a /etc/apt/sources.list
+RUN apt-get -y update --allow-unauthenticated && apt-get -y upgrade && \
     apt-get install -y wget \
     git \
     pkg-config \
+    libjasper1 \
     libhdf5-103 \
     libhdf5-dev \
     libhdf5-serial-dev \
