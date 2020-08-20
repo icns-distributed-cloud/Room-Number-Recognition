@@ -1,0 +1,15 @@
+{
+    "main_engine": {
+        "device_number": 0,
+        "padding_size": 5,
+        "window_horizontal_size": 640,
+        "window_vertical_size": 320
+    },
+    "labelling_engine": {
+        "model1_path": "",
+        "model2_path": "",
+        "flag_for_save_img": false,
+        "path_for_noise": "",
+        "path_for_num": ""
+    }
+}
