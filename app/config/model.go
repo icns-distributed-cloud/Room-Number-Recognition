@@ -14,9 +14,13 @@ type ConfigMainEngine struct {
 }
 
 type ConfigLabellingEngine struct {
-	Model1Path     string `json:"model1_path"`
-	Model2Path     string `json:"model2_path"`
-	FlagForSaveImg bool   `json:"flag_for_save_img"`
-	PathForNoise   string `json:"path_for_noise"`
-	PathForNum     string `json:"path_for_num"`
+	Model1Path         string   `json:"model1_path"`
+	Model1InputLayer   string   `json:"model1_input_layer"`
+	Model1OutputLayers []string `json:"model1_output_layers"`
+	Model2Path         string   `json:"model2_path"`
+	Model2InputLayer   string   `json:"model2_input_layer"`
+	Model2OutputLayers []string `json:"model2_output_layers"`
+	FlagForSaveImg     bool     `json:"flag_for_save_img"`
+	PathForNoise       string   `json:"path_for_noise"`
+	PathForNum         string   `json:"path_for_num"`
 }

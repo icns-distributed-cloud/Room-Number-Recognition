@@ -6,8 +6,12 @@
         "window_vertical_size": 320
     },
     "labelling_engine": {
-        "model1_path": "",
+        "model1_path": "checker_model_0820/checker_model.pb",
+        "model1_input_layer": "input_layer",
+        "model1_output_layers": ["output_layer/Softmax"],
         "model2_path": "",
+        "model2_input_layer": "",
+        "model2_output_layers": [],
         "flag_for_save_img": false,
         "path_for_noise": "",
         "path_for_num": ""
