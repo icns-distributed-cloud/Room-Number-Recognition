@@ -31,8 +31,6 @@ func (model *MLModel) Close() error {
 }
 
 func (model *MLModel) predict(img *gocv.Mat) ([][]float32, error) {
-	defer img.Close()
-
 	blob := gocv.BlobFromImage(*img, 1.0, image.Pt(48, 48), gocv.NewScalar(0, 0, 0, 0), true, false)
 	defer blob.Close()
 
@@ -58,12 +56,40 @@ func (model *MLModel) predict(img *gocv.Mat) ([][]float32, error) {
 }
 
 // Predict returns output of model.
-func (model *MLModel) Predict(img *gocv.Mat) ([][]float32, error) {
-	return model.predict(img)
+func (model *MLModel) Predict(img *gocv.Mat, color string) ([][]float32, error) {
+	switch color {
+	case "rgb":
+		convertedImg := gocv.NewMat()
+		gocv.CvtColor(*img, &convertedImg, gocv.ColorBGRToRGB)
+		return model.predict(&convertedImg)
+
+	case "gray":
+		convertedImg := gocv.NewMat()
+		gocv.CvtColor(*img, &convertedImg, gocv.ColorBGRToGray)
+		return model.predict(&convertedImg)
+
+	default:
+		return model.predict(img)
+	}
 }
 
 // PredictWithImageFile calls predict with static image file.
-func (model *MLModel) PredictWithImageFile(filepath string) ([][]float32, error) {
-	img := gocv.IMRead(filepath, gocv.IMReadGrayScale)
-	return model.predict(&img)
+func (model *MLModel) PredictWithImageFile(filepath string, color string) ([][]float32, error) {
+	var img gocv.Mat
+
+	switch color {
+	case "rgb":
+		img = gocv.IMRead(filepath, gocv.IMReadColor)
+		convertedImg := gocv.NewMat()
+		gocv.CvtColor(img, &convertedImg, gocv.ColorBGRToRGB)
+		return model.predict(&convertedImg)
+
+	case "gray":
+		img = gocv.IMRead(filepath, gocv.IMReadGrayScale)
+		return model.predict(&img)
+
+	default:
+		img = gocv.IMRead(filepath, gocv.IMReadColor)
+		return model.predict(&img)
+	}
 }
