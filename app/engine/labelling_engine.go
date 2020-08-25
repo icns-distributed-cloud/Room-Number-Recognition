@@ -22,10 +22,11 @@ type LabellingEngine struct {
 	pathForNoise       string
 	pathForNum         string
 	flagForSaveImg     bool
+	readySignal        chan struct{}
 	/* Public */
 	Model1      *models.MLModel
 	Model2      *models.MLModel
-	ImageChan   chan gocv.Mat
+	ImageChan   chan *gocv.Mat
 	ResultChan  chan string
 	CloseSignal chan struct{}
 }
@@ -44,9 +45,10 @@ func (le *LabellingEngine) Init(cfg config.Config) error {
 	le.pathForNum = cfg.LabellingEngine.PathForNum
 
 	// Create channels
-	le.ImageChan = make(chan gocv.Mat, 100)
+	le.ImageChan = make(chan *gocv.Mat, 100)
 	le.ResultChan = make(chan string)
 	le.CloseSignal = make(chan struct{}, 1)
+	le.readySignal = make(chan struct{}, 1)
 
 	// Load Models
 	var err error
@@ -77,10 +79,17 @@ func (le *LabellingEngine) Close() {
 	// Close channels
 	close(le.ImageChan)
 	close(le.ResultChan)
+	close(le.readySignal)
+	close(le.CloseSignal)
+}
+
+// WaitForReady waits for the labelling engine.
+func (le *LabellingEngine) WaitForReady() {
+	<-le.readySignal
 }
 
 // NewMatrix send a new 48*48*1 grayscale image matrix to ImageChan.
-func (le *LabellingEngine) NewMatrix(input gocv.Mat) {
+func (le *LabellingEngine) NewMatrix(input *gocv.Mat) {
 	le.ImageChan <- input
 }
 
@@ -91,10 +100,12 @@ func (le *LabellingEngine) Run() {
 		for {
 			select {
 			case output := <-le.ResultChan:
-				fmt.Println(output)
+				fmt.Println("output:", output)
 			}
 		}
 	}()
+
+	le.readySignal <- struct{}{}
 
 	// Main Loop
 	for {
@@ -105,14 +116,21 @@ func (le *LabellingEngine) Run() {
 
 		// New image matrix.
 		case img := <-le.ImageChan:
-			go le.makeResult(&img)
+			go func() {
+				defer img.Close()
+
+				err := le.makeResult(img)
+				if err != nil {
+					fmt.Println(err)
+				}
+			}()
 		}
 	}
 }
 
 func (le *LabellingEngine) makeResult(img *gocv.Mat) error {
 	// Predict with checker model.
-	output1, err := le.Model1.Predict(img)
+	output1, err := le.Model1.Predict(img, "gray")
 	if err != nil {
 		return err
 	}
@@ -122,12 +140,8 @@ func (le *LabellingEngine) makeResult(img *gocv.Mat) error {
 		return nil
 	}
 
-	// Duplicate img 3 times.
-	repeatedImg := gocv.NewMat()
-	gocv.Merge([]gocv.Mat{*img, *img, *img}, &repeatedImg)
-
 	// Predict with svhn model.
-	_output2, err := le.Model2.Predict(&repeatedImg)
+	_output2, err := le.Model2.Predict(img, "rgb")
 	if err != nil {
 		return err
 	}
