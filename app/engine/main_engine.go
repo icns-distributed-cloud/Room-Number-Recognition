@@ -45,6 +45,8 @@ func (me *MainEngine) Init(cfg config.Config, logger *log.Logger) error {
 		return err
 	}
 
+	me.Logger.Println("Initiated MainEngine successfully.")
+
 	return nil
 }
 
