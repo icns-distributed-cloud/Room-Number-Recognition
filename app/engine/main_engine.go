@@ -2,7 +2,11 @@ package engine
 
 import (
 	"app/config"
+	"fmt"
 	"image"
+	"image/color"
+	"sync"
+	"time"
 
 	"gocv.io/x/gocv"
 )
@@ -47,12 +51,130 @@ func (me *MainEngine) Close() {
 	close(me.CloseSignal)
 }
 
+// DrawBbox analyzes controus in this frame,
+//	detects number plate image, gets cropped image,
+//	and send it to LabellingEngine.
+// DrawBbox returns the time when the function is done.
+func (me *MainEngine) DrawBbox(frame *gocv.Mat, prevTime time.Time) time.Time {
+	// Keep the original frame image.
+	originImg := frame.Clone()
+	defer originImg.Close()
+
+	// Get canny from grayscale image.
+	grayImg := gocv.NewMat()
+	canny := gocv.NewMat()
+	gocv.CvtColor(originImg, &grayImg, gocv.ColorBGRToGray)
+	gocv.Canny(grayImg, &canny, 50, 150)
+	defer grayImg.Close()
+	defer canny.Close()
+
+	// Get all contour points
+	contours := gocv.FindContours(canny, gocv.RetrievalList, gocv.ChainApproxNone)
+
+	// Analyze each contours
+	for idx := range contours {
+		// Get rectangle bounding contour.
+		rect := gocv.BoundingRect(contours[idx])
+		_x, _y, _w, _h := rect.Min.X, rect.Min.Y, (rect.Max.X - rect.Min.X), (rect.Max.Y - rect.Min.Y)
+
+		// Pass if the contour locates on boundary of image,
+		//	or if the contour is too small/large.
+		if _w > 70 || _h > 45 || _w < 15 {
+			continue
+		}
+		if float32(_h/_w) > 0.7 || float32(_w/_h) > 1.0 {
+			continue
+		}
+		if _h > 40 || _w > 70 {
+			continue
+		}
+		if _y > 150 || _x > 500 || _x < 200 {
+			continue
+		}
+
+		// Draw red rectangle box on frame image.
+		croppedImg := crop(originImg, rect.Min.X, rect.Min.Y, rect.Max.X, rect.Max.Y)
+		gocv.Rectangle(frame, rect, color.RGBA{255, 0, 0, 1}, 3)
+		defer croppedImg.Close()
+
+		// Reshape and send cropped BGR image to LabellingEngine
+		resizedImg := gocv.NewMat()
+		gocv.Resize(croppedImg, &resizedImg, image.Point{48, 48}, 0, 0, gocv.InterpolationLinear)
+		me.LE.NewMatrix(&resizedImg)
+	}
+
+	// Calculate FPS and show FPS on frame
+	currentTime := time.Now()
+	elapsed := float64(time.Since(prevTime)) / float64(time.Second)
+	fps := 1.0 / elapsed
+	fpsStr := fmt.Sprintf("FPS : %.2f", fps)
+	gocv.PutText(frame, fpsStr, image.Point{0, 40}, gocv.FontHersheyComplexSmall,
+		0.8, color.RGBA{255, 0, 0, 1}, 1)
+
+	return currentTime
+}
+
+// Run starts main loop of MainEngine.
+func (me *MainEngine) Run() error {
+	var err error
+
+	// Open the video device
+	cam, err := gocv.OpenVideoCapture(me.deviceNumber)
+	if err != nil {
+		return err
+	}
+	defer cam.Close()
+
+	// Open the display window
+	window := gocv.NewWindow("Room-Number-Recog")
+	defer window.Close()
+
+	// Run LabellingEngine.
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	go func() {
+		me.LE.Run()
+		wg.Done()
+	}()
+
+	// Wait for ready
+	me.LE.WaitForReady()
+
+	// Prepare variables for main loop
+	prevTime := time.Now()
+	frame := gocv.NewMat()
+	defer frame.Close()
+
+	// Main loop
+L:
+	for {
+		select {
+		case <-me.CloseSignal:
+			break L
+
+		default:
+			// Read frame image
+			if ok := cam.Read(&frame); !ok {
+				err = fmt.Errorf("cannot read device %v", me.deviceNumber)
+				break L
+			}
+			if frame.Empty() {
+				continue
+			}
+
+			// Draw bbox
+			prevTime = me.DrawBbox(&frame, prevTime)
+			window.WaitKey(1)
+		}
+	}
+
+	me.LE.Close()
+	wg.Wait()
+	return nil
+}
+
 // Crop returns a matrix of cropped image from src.
-func (me *MainEngine) Crop(src gocv.Mat, left, top, right, bottom int) gocv.Mat {
+func crop(src gocv.Mat, left, top, right, bottom int) gocv.Mat {
 	croppedMat := src.Region(image.Rect(left, top, right, bottom))
 	return croppedMat.Clone()
 }
-
-// DrawBbox
-
-// Run
