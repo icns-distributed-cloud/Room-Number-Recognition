@@ -88,7 +88,7 @@ func (le *LabellingEngine) WaitForReady() {
 	<-le.readySignal
 }
 
-// NewMatrix send a new 48*48*1 grayscale image matrix to ImageChan.
+// NewMatrix send a new 48*48*3 BGR image matrix to ImageChan.
 func (le *LabellingEngine) NewMatrix(input *gocv.Mat) {
 	le.ImageChan <- input
 }
@@ -96,9 +96,14 @@ func (le *LabellingEngine) NewMatrix(input *gocv.Mat) {
 // Run is a function that starts main loop of labelling engine.
 func (le *LabellingEngine) Run() {
 	// Get outputs
+	done := make(chan struct{}, 1)
 	go func() {
+	L1:
 		for {
 			select {
+			case <-done:
+				break L1
+
 			case output := <-le.ResultChan:
 				fmt.Println("output:", output)
 			}
@@ -108,11 +113,13 @@ func (le *LabellingEngine) Run() {
 	le.readySignal <- struct{}{}
 
 	// Main Loop
+L2:
 	for {
 		select {
 		// Close signal.
 		case <-le.CloseSignal:
-			break
+			done <- struct{}{}
+			break L2
 
 		// New image matrix.
 		case img := <-le.ImageChan:
