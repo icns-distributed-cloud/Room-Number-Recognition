@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"image"
 	"image/color"
+	"log"
 	"sync"
 	"time"
 
@@ -20,12 +21,15 @@ type MainEngine struct {
 	windowHSize  int
 	windowWSize  int
 	/* Public */
+	Logger      *log.Logger
 	CloseSignal chan struct{}
 	LE          *LabellingEngine
 }
 
 // Init function initiates MainEngine and LabellingEngine with Config data.
-func (me *MainEngine) Init(cfg config.Config) error {
+func (me *MainEngine) Init(cfg config.Config, logger *log.Logger) error {
+	me.Logger = logger
+
 	// Load data from Config
 	me.deviceNumber = cfg.MainEngine.DeviceNumber
 	me.paddingSize = cfg.MainEngine.PaddingSize
@@ -37,7 +41,7 @@ func (me *MainEngine) Init(cfg config.Config) error {
 
 	// Init LabellingEngine
 	me.LE = &LabellingEngine{}
-	if err := me.LE.Init(cfg); err != nil {
+	if err := me.LE.Init(cfg, logger); err != nil {
 		return err
 	}
 
@@ -49,6 +53,7 @@ func (me *MainEngine) Close() {
 	me.LE.Close()
 	me.CloseSignal <- struct{}{}
 	close(me.CloseSignal)
+	me.Logger.Println("MainEngine closed.")
 }
 
 // DrawBbox analyzes controus in this frame,
@@ -124,10 +129,12 @@ func (me *MainEngine) Run() error {
 		return err
 	}
 	defer cam.Close()
+	me.Logger.Println("Opened video device successfully.")
 
 	// Open the display window
 	window := gocv.NewWindow("Room-Number-Recog")
 	defer window.Close()
+	me.Logger.Println("Created new window.")
 
 	// Run LabellingEngine.
 	wg := sync.WaitGroup{}
@@ -138,7 +145,9 @@ func (me *MainEngine) Run() error {
 	}()
 
 	// Wait for ready
+	me.Logger.Println("Waiting for LabellingEngine...")
 	me.LE.WaitForReady()
+	me.Logger.Println("LabellingEngine is ready now.")
 
 	// Prepare variables for main loop
 	prevTime := time.Now()
@@ -146,6 +155,7 @@ func (me *MainEngine) Run() error {
 	defer frame.Close()
 
 	// Main loop
+	me.Logger.Println("Main loop started.")
 L:
 	for {
 		select {

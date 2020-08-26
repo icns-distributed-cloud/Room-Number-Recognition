@@ -2,6 +2,7 @@ package engine
 
 import (
 	"fmt"
+	"log"
 	"strconv"
 
 	"app/config"
@@ -24,6 +25,7 @@ type LabellingEngine struct {
 	flagForSaveImg     bool
 	readySignal        chan struct{}
 	/* Public */
+	Logger      *log.Logger
 	Model1      *models.MLModel
 	Model2      *models.MLModel
 	ImageChan   chan *gocv.Mat
@@ -32,7 +34,9 @@ type LabellingEngine struct {
 }
 
 // Init function initiates LabellingEngine with Config data.
-func (le *LabellingEngine) Init(cfg config.Config) error {
+func (le *LabellingEngine) Init(cfg config.Config, logger *log.Logger) error {
+	le.Logger = logger
+
 	// Load data from Config
 	le.model1Path = cfg.LabellingEngine.Model1Path
 	le.model1InputLayer = cfg.LabellingEngine.Model1InputLayer
@@ -58,13 +62,16 @@ func (le *LabellingEngine) Init(cfg config.Config) error {
 	if err != nil {
 		return err
 	}
+	le.Logger.Println("Model1 loaded.")
 	le.Model2, err = models.NewMLModel(le.model2Path,
 		le.model2InputLayer,
 		le.model2OutputLayers)
 	if err != nil {
 		return err
 	}
+	le.Logger.Println("Model2 loaded.")
 
+	le.Logger.Println("Initiated LabellingEngine successfully.")
 	return nil
 }
 
@@ -81,6 +88,7 @@ func (le *LabellingEngine) Close() {
 	close(le.ResultChan)
 	close(le.readySignal)
 	close(le.CloseSignal)
+	le.Logger.Println("LabellingEngine closed.")
 }
 
 // WaitForReady waits for the labelling engine.
@@ -105,7 +113,7 @@ func (le *LabellingEngine) Run() {
 				break L1
 
 			case output := <-le.ResultChan:
-				fmt.Println("output:", output)
+				le.Logger.Printf("OUTPUT : %s\n", output)
 			}
 		}
 	}()
