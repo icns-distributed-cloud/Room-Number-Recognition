@@ -157,7 +157,7 @@ func (me *MainEngine) Run() error {
 	defer frame.Close()
 
 	// Main loop
-	me.Logger.Println("Main loop started.")
+	me.Logger.Printf("Main loop started. camera device: %v\n", me.deviceNumber)
 L:
 	for {
 		select {
@@ -168,8 +168,9 @@ L:
 		default:
 			// Read frame image
 			if ok := cam.Read(&frame); !ok {
-				me.Logger.Printf("Cannot read device %v\n", me.deviceNumber)
-				break L
+				// me.Logger.Printf("Cannot read device %v\n", me.deviceNumber)
+				// break L
+				continue
 			}
 			if frame.Empty() {
 				continue
