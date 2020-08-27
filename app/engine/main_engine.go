@@ -176,6 +176,7 @@ L:
 
 			// Draw bbox
 			prevTime = me.DrawBbox(&frame, prevTime)
+			window.IMShow(frame)
 			window.WaitKey(1)
 		}
 	}
