@@ -7,4 +7,4 @@ WORKDIR /app
 COPY . .
 
 RUN go build -a -o main main.go
-ENTRYPOINT [ "./main", "--config=/app/config.json" ]
+ENTRYPOINT [ "./main", "--config=/cfg/config.json" ]
