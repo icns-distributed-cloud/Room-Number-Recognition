@@ -167,11 +167,11 @@ L:
 
 		default:
 			// Read frame image
-			if ok := cam.Read(&frame); !ok {
-				// me.Logger.Printf("Cannot read device %v\n", me.deviceNumber)
-				// break L
-				continue
-			}
+			// if ok := cam.Read(&frame); !ok {
+			// 	me.Logger.Printf("Cannot read device %v\n", me.deviceNumber)
+			// 	break L
+			// }
+			cam.Read(&frame)
 			if frame.Empty() {
 				continue
 			}
