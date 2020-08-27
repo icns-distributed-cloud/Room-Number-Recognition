@@ -1,6 +1,6 @@
 {
     "main_engine": {
-        "device_number": 0,
+        "device_number": -1,
         "padding_size": 5,
         "window_horizontal_size": 640,
         "window_vertical_size": 320

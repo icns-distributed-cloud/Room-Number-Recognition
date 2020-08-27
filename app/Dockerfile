@@ -2,9 +2,9 @@ FROM freckie/rpi-gocv:1.15.0-buster
 
 LABEL maintainer="freckie@frec.kr"
 
-RUN mkdir -p $GOPATH/src/app
-WORKDIR $GOPATH/src/app
+RUN mkdir -p /app
+WORKDIR /app
 COPY . .
 
-RUN go build -o main main.go
-ENTRYPOINT [ "./main", "--config=config.json" ]
+RUN go build -a -o main main.go
+ENTRYPOINT [ "./main", "--config=/app/config.json" ]
