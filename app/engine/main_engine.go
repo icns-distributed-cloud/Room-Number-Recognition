@@ -162,12 +162,13 @@ L:
 	for {
 		select {
 		case <-me.CloseSignal:
+			me.Logger.Println("Close signal for MainEngine detected.")
 			break L
 
 		default:
 			// Read frame image
 			if ok := cam.Read(&frame); !ok {
-				err = fmt.Errorf("cannot read device %v", me.deviceNumber)
+				me.Logger.Printf("Cannot read device %v\n", me.deviceNumber)
 				break L
 			}
 			if frame.Empty() {
@@ -180,10 +181,11 @@ L:
 			window.WaitKey(1)
 		}
 	}
+	me.Logger.Println("Main loop has broken.")
 
 	me.LE.Close()
 	wg.Wait()
-	return nil
+	return fmt.Errorf("terminated")
 }
 
 // Crop returns a matrix of cropped image from src.
