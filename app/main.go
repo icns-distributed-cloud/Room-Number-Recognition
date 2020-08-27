@@ -23,6 +23,7 @@ func main() {
 		panic(err)
 	}
 	logger.Println("Loaded configure file successfully.")
+	logger.Println(*cfg)
 
 	// Initialize engine.
 	me := engine.MainEngine{}
