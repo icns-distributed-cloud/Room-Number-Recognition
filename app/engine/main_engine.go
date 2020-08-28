@@ -161,6 +161,8 @@ func (me *MainEngine) Run() error {
 
 	// Main loop
 	me.Logger.Printf("Main loop started. camera device: %v\n", me.deviceNumber)
+	logo := gocv.IMRead("./gocvlogo.jpg", gocv.IMReadColor)
+	window.IMShow(logo)
 L:
 	for {
 		select {
