@@ -136,6 +136,9 @@ func (me *MainEngine) Run() error {
 	// Open the display window
 	window := gocv.NewWindow("Room-Number-Recog")
 	defer window.Close()
+	loading := gocv.IMRead("./loading.jpg", gocv.IMReadColor)
+	window.IMShow(loading)
+	window.WaitKey(3000)
 	me.Logger.Println("Created new window.")
 
 	// Run LabellingEngine.
@@ -155,9 +158,6 @@ func (me *MainEngine) Run() error {
 	prevTime := time.Now()
 	frame := gocv.NewMat()
 	defer frame.Close()
-
-	logo := gocv.IMRead("./gocvlogo.jpg", gocv.IMReadColor)
-	window.IMShow(logo)
 
 	// Main loop
 	me.Logger.Printf("Main loop started. camera device: %v\n", me.deviceNumber)
