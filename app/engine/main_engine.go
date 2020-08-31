@@ -18,8 +18,8 @@ type MainEngine struct {
 	/* Private */
 	deviceNumber int
 	paddingSize  int
-	windowHSize  int
-	windowWSize  int
+	windowHSize  int // height of window size (vertical)
+	windowWSize  int // windth of window size (horizontal)
 	/* Public */
 	Logger      *log.Logger
 	CloseSignal chan struct{}
@@ -33,8 +33,8 @@ func (me *MainEngine) Init(cfg config.Config, logger *log.Logger) error {
 	// Load data from Config
 	me.deviceNumber = cfg.MainEngine.DeviceNumber
 	me.paddingSize = cfg.MainEngine.PaddingSize
-	me.windowHSize = cfg.MainEngine.WindowHorizontalSize
-	me.windowWSize = cfg.MainEngine.WindowVertialSize
+	me.windowWSize = cfg.MainEngine.WindowHorizontalSize
+	me.windowHSize = cfg.MainEngine.WindowVertialSize
 
 	// Create channels
 	me.CloseSignal = make(chan struct{}, 1)
@@ -91,7 +91,7 @@ func (me *MainEngine) DrawBbox(frame *gocv.Mat, prevTime time.Time) time.Time {
 
 			// Pass if the contour locates on boundary of image,
 			//	or if the contour is too small/large.
-			if filterNoise(_x, _y, _w, _h) {
+			if me.filterNoise(_x, _y, _w, _h) {
 				return
 			}
 
@@ -185,7 +185,7 @@ L:
 			// Draw bbox
 			prevTime = me.DrawBbox(&frame, prevTime)
 			window.IMShow(frame)
-			window.WaitKey(1)
+			window.WaitKey(10)
 		}
 	}
 	me.Logger.Println("Main loop has broken.")
@@ -195,14 +195,9 @@ L:
 	return fmt.Errorf("terminated")
 }
 
-// crop returns a matrix of cropped image from src.
-func crop(src gocv.Mat, left, top, right, bottom int) gocv.Mat {
-	croppedMat := src.Region(image.Rect(left, top, right, bottom))
-	return croppedMat.Clone()
-}
-
 // filterNoise returns true if the contour is noise.
-func filterNoise(x, y, w, h int) (isNoise bool) {
+func (me MainEngine) filterNoise(x, y, w, h int) (isNoise bool) {
+	winH, winW := me.windowHSize, me.windowWSize
 	if w > 70 || h > 45 || w < 15 {
 		return true
 	}
@@ -215,5 +210,17 @@ func filterNoise(x, y, w, h int) (isNoise bool) {
 	if y > 150 || x > 500 || x < 200 {
 		return true
 	}
+	if float32(h) < float32(winH)*0.15 {
+		return true
+	}
+	if float32(w) < float32(winW)*0.2 {
+		return true
+	}
 	return false
+}
+
+// crop returns a matrix of cropped image from src.
+func crop(src gocv.Mat, left, top, right, bottom int) gocv.Mat {
+	croppedMat := src.Region(image.Rect(left, top, right, bottom))
+	return croppedMat.Clone()
 }
