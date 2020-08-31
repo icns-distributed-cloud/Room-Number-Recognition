@@ -37,5 +37,5 @@ Room number recognition service for *indoor self-driving car*s. This service ana
     - OpenCV 4.2.0
 
 ## Todo
-- [v] Complete the Dockerfile
-- [v] Change implementation from Python to Go.
+- [x] Complete the Dockerfile
+- [x] Change implementation from Python to Go.
