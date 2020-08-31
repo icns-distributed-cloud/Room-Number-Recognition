@@ -160,9 +160,8 @@ func (me *MainEngine) Run() error {
 	defer frame.Close()
 
 	// Main loop
+	errCnt := 0
 	me.Logger.Printf("Main loop started. camera device: %v\n", me.deviceNumber)
-	logo := gocv.IMRead("./gocvlogo.jpg", gocv.IMReadColor)
-	window.IMShow(logo)
 L:
 	for {
 		select {
@@ -178,6 +177,10 @@ L:
 			// }
 			cam.Read(&frame)
 			if frame.Empty() {
+				errCnt++
+				if errCnt%1000 == 0 {
+					me.Logger.Printf("Error occured %dtimes.\n", errCnt)
+				}
 				continue
 			}
 
