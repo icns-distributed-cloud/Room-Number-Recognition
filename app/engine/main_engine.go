@@ -79,36 +79,34 @@ func (me *MainEngine) DrawBbox(frame *gocv.Mat, prevTime time.Time) time.Time {
 	contours := gocv.FindContours(canny, gocv.RetrievalList, gocv.ChainApproxNone)
 
 	// Analyze each contours
+	wg := sync.WaitGroup{}
 	for idx := range contours {
-		// Get rectangle bounding contour.
-		rect := gocv.BoundingRect(contours[idx])
-		_x, _y, _w, _h := rect.Min.X, rect.Min.Y, (rect.Max.X - rect.Min.X), (rect.Max.Y - rect.Min.Y)
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
 
-		// Pass if the contour locates on boundary of image,
-		//	or if the contour is too small/large.
-		if _w > 70 || _h > 45 || _w < 15 {
-			continue
-		}
-		if float32(_h/_w) > 0.7 || float32(_w/_h) > 1.0 {
-			continue
-		}
-		if _h > 40 || _w > 70 {
-			continue
-		}
-		if _y > 150 || _x > 500 || _x < 200 {
-			continue
-		}
+			// Get rectangle bounding contour.
+			rect := gocv.BoundingRect(contours[idx])
+			_x, _y, _w, _h := rect.Min.X, rect.Min.Y, (rect.Max.X - rect.Min.X), (rect.Max.Y - rect.Min.Y)
 
-		// Draw red rectangle box on frame image.
-		croppedImg := crop(originImg, rect.Min.X, rect.Min.Y, rect.Max.X, rect.Max.Y)
-		gocv.Rectangle(frame, rect, color.RGBA{255, 0, 0, 1}, 3)
-		defer croppedImg.Close()
+			// Pass if the contour locates on boundary of image,
+			//	or if the contour is too small/large.
+			if filterNoise(_x, _y, _w, _h) {
+				return
+			}
 
-		// Reshape and send cropped BGR image to LabellingEngine
-		resizedImg := gocv.NewMat()
-		gocv.Resize(croppedImg, &resizedImg, image.Point{48, 48}, 0, 0, gocv.InterpolationLinear)
-		me.LE.NewMatrix(&resizedImg)
+			// Draw red rectangle box on frame image.
+			croppedImg := crop(originImg, rect.Min.X, rect.Min.Y, rect.Max.X, rect.Max.Y)
+			gocv.Rectangle(frame, rect, color.RGBA{255, 0, 0, 1}, 3)
+			defer croppedImg.Close()
+
+			// Reshape and send cropped BGR image to LabellingEngine
+			resizedImg := gocv.NewMat()
+			gocv.Resize(croppedImg, &resizedImg, image.Point{48, 48}, 0, 0, gocv.InterpolationLinear)
+			me.LE.NewMatrix(&resizedImg)
+		}()
 	}
+	wg.Wait()
 
 	// Calculate FPS and show FPS on frame
 	currentTime := time.Now()
@@ -197,8 +195,25 @@ L:
 	return fmt.Errorf("terminated")
 }
 
-// Crop returns a matrix of cropped image from src.
+// crop returns a matrix of cropped image from src.
 func crop(src gocv.Mat, left, top, right, bottom int) gocv.Mat {
 	croppedMat := src.Region(image.Rect(left, top, right, bottom))
 	return croppedMat.Clone()
+}
+
+// filterNoise returns true if the contour is noise.
+func filterNoise(x, y, w, h int) (isNoise bool) {
+	if w > 70 || h > 45 || w < 15 {
+		return true
+	}
+	if float32(h/w) > 0.7 || float32(w/h) > 1.0 {
+		return true
+	}
+	if h > 40 || w > 70 {
+		return true
+	}
+	if y > 150 || x > 500 || x < 200 {
+		return true
+	}
+	return false
 }
