@@ -151,9 +151,13 @@ func (le *LabellingEngine) makeResult(img *gocv.Mat) error {
 	}
 
 	// If the img doesn't contain number, return nil.
-	if output1[0][0] >= output1[0][1] {
+	isTarget := slice.ArgMax(output1[0])
+	if isTarget == 0 {
 		return nil
 	}
+	// if output1[0][0] >= output1[0][1] {
+	// 	return nil
+	// }
 
 	// Predict with svhn model.
 	_output2, err := le.Model2.Predict(img, "rgb")
