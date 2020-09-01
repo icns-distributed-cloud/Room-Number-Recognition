@@ -12,6 +12,7 @@ import (
 	"gocv.io/x/gocv"
 )
 
+// LabellingEngine is a wrapper for Tensorflow model predictor.
 type LabellingEngine struct {
 	/* Private */
 	model1Path         string
