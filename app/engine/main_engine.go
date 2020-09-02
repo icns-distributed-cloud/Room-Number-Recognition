@@ -82,11 +82,11 @@ func (me *MainEngine) DrawBbox(frame *gocv.Mat, prevTime time.Time) time.Time {
 	wg := sync.WaitGroup{}
 	for idx := range contours {
 		wg.Add(1)
-		go func() {
+		go func(_idx int) {
 			defer wg.Done()
 
 			// Get rectangle bounding contour.
-			rect := gocv.BoundingRect(contours[idx])
+			rect := gocv.BoundingRect(contours[_idx])
 			_x, _y, _w, _h := rect.Min.X, rect.Min.Y, (rect.Max.X - rect.Min.X), (rect.Max.Y - rect.Min.Y)
 
 			// Pass if the contour locates on boundary of image,
@@ -104,7 +104,7 @@ func (me *MainEngine) DrawBbox(frame *gocv.Mat, prevTime time.Time) time.Time {
 			resizedImg := gocv.NewMat()
 			gocv.Resize(croppedImg, &resizedImg, image.Point{48, 48}, 0, 0, gocv.InterpolationLinear)
 			me.LE.NewMatrix(&resizedImg)
-		}()
+		}(idx)
 	}
 	wg.Wait()
 
@@ -210,10 +210,10 @@ func (me MainEngine) filterNoise(x, y, w, h int) (isNoise bool) {
 	if y > 150 || x > 500 || x < 200 {
 		return true
 	}
-	if float32(h) < float32(winH)*0.15 {
+	if float32(h) < float32(winH)*0.1 {
 		return true
 	}
-	if float32(w) < float32(winW)*0.2 {
+	if float32(w) < float32(winW)*0.5 {
 		return true
 	}
 	return false
