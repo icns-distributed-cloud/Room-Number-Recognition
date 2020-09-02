@@ -3,7 +3,7 @@
         "device_number": 0,
         "padding_size": 5,
         "window_horizontal_size": 640,
-        "window_vertical_size": 320
+        "window_vertical_size": 480
     },
     "labelling_engine": {
         "model1_path": "checker_model_0820/checker_model.pb",

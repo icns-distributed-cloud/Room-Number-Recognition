@@ -133,6 +133,7 @@ func (me *MainEngine) Run() error {
 
 	// Open the display window
 	window := gocv.NewWindow("Room-Number-Recog")
+	window.ResizeWindow(me.windowWSize, me.windowHSize)
 	defer window.Close()
 	loading := gocv.IMRead("./loading.jpg", gocv.IMReadColor)
 	window.IMShow(loading)
