@@ -198,7 +198,7 @@ L:
 
 // filterNoise returns true if the contour is noise.
 func (me MainEngine) filterNoise(x, y, w, h int) (isNoise bool) {
-	winH, winW := me.windowHSize, me.windowWSize
+	// winH, winW := me.windowHSize, me.windowWSize
 	if w > 70 || h > 45 || w < 15 {
 		return true
 	}
@@ -211,12 +211,12 @@ func (me MainEngine) filterNoise(x, y, w, h int) (isNoise bool) {
 	if y > 150 || x > 500 || x < 200 {
 		return true
 	}
-	if float32(h) < float32(winH)*0.1 {
-		return true
-	}
-	if float32(w) < float32(winW)*0.5 {
-		return true
-	}
+	// if float32(h) < float32(winH)*0.1 {
+	// 	return true
+	// }
+	// if float32(w) < float32(winW)*0.15 {
+	// 	return true
+	// }
 	return false
 }
 
