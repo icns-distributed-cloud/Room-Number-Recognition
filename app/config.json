@@ -1,6 +1,6 @@
 {
     "main_engine": {
-        "device_number": 0,
+        "device_number": -1,
         "padding_size": 5,
         "window_horizontal_size": 640,
         "window_vertical_size": 480
@@ -19,8 +19,9 @@
             "SM_digit3_2/Softmax",
             "SM_digit4_2/Softmax"
         ],
+        "max_output_channel_length": 40,
         "flag_for_save_img": false,
-        "path_for_noise": "",
-        "path_for_num": ""
+        "path_for_noise": "images/noise",
+        "path_for_num": "images/num"
     }
 }
