@@ -71,12 +71,12 @@ func (me *MainEngine) DrawBbox(frame *gocv.Mat, prevTime time.Time) time.Time {
 	grayImg := gocv.NewMat()
 	canny := gocv.NewMat()
 	gocv.CvtColor(originImg, &grayImg, gocv.ColorBGRToGray)
-	gocv.Canny(grayImg, &canny, 50, 150)
+	gocv.Canny(grayImg, &canny, 150, 200) // default 50, 150
 	defer grayImg.Close()
 	defer canny.Close()
 
 	// Get all contour points
-	contours := gocv.FindContours(canny, gocv.RetrievalList, gocv.ChainApproxNone)
+	contours := gocv.FindContours(canny, gocv.RetrievalTree, gocv.ChainApproxTC89L1) // defautl RetrievalList, ChainApproxNone
 
 	// Analyze each contours
 	wg := sync.WaitGroup{}
@@ -95,9 +95,14 @@ func (me *MainEngine) DrawBbox(frame *gocv.Mat, prevTime time.Time) time.Time {
 				return
 			}
 
+			area := gocv.ContourArea(contours[_idx])
+			if area < 10 {
+				return
+			}
+
 			// Draw red rectangle box on frame image.
-			croppedImg := crop(originImg, rect.Min.X, rect.Min.Y, rect.Max.X, rect.Max.Y)
-			gocv.Rectangle(frame, rect, color.RGBA{255, 0, 0, 1}, 3)
+			croppedImg := me.crop(originImg, rect.Min.X, rect.Min.Y, rect.Max.X, rect.Max.Y)
+			gocv.Rectangle(frame, rect, color.RGBA{255, 0, 0, 1}, 2)
 			defer croppedImg.Close()
 
 			// Reshape and send cropped BGR image to LabellingEngine
@@ -198,7 +203,7 @@ L:
 
 // filterNoise returns true if the contour is noise.
 func (me MainEngine) filterNoise(x, y, w, h int) (isNoise bool) {
-	// winH, winW := me.windowHSize, me.windowWSize
+	winH, winW := me.windowHSize, me.windowWSize
 	if w > 70 || h > 45 || w < 15 {
 		return true
 	}
@@ -211,17 +216,32 @@ func (me MainEngine) filterNoise(x, y, w, h int) (isNoise bool) {
 	if y > 150 || x > 500 || x < 200 {
 		return true
 	}
-	// if float32(h) < float32(winH)*0.1 {
-	// 	return true
-	// }
-	// if float32(w) < float32(winW)*0.15 {
-	// 	return true
-	// }
+	if float32(h) < float32(winH)*0.03 {
+		return true
+	}
+	if float32(w) < float32(winW)*0.05 {
+		return true
+	}
 	return false
 }
 
 // crop returns a matrix of cropped image from src.
-func crop(src gocv.Mat, left, top, right, bottom int) gocv.Mat {
-	croppedMat := src.Region(image.Rect(left, top, right, bottom))
+func (me MainEngine) crop(src gocv.Mat, left, top, right, bottom int) gocv.Mat {
+	var _left, _top, _right, _bottom int
+	padding := me.paddingSize
+
+	if left > padding {
+		_left = left - padding
+	}
+	if top > padding {
+		_top = top - padding
+	}
+	if right+padding < me.windowWSize {
+		_right = right + padding
+	}
+	if bottom+padding < me.windowHSize {
+		_bottom = bottom + padding
+	}
+	croppedMat := src.Region(image.Rect(_left, _top, _right, _bottom))
 	return croppedMat.Clone()
 }
