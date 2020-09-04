@@ -2,6 +2,7 @@
 ## .gitignore ##
 ################
 *.pb
+images/
 
 ###########################
 ## .gitignore for VSCode ##
