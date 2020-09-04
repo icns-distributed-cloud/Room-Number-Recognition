@@ -137,7 +137,7 @@ func (me *MainEngine) Run() error {
 	defer window.Close()
 	loading := gocv.IMRead("./loading.jpg", gocv.IMReadColor)
 	window.IMShow(loading)
-	window.WaitKey(3000)
+	window.WaitKey(2000)
 	me.Logger.Println("Created new window.")
 
 	// Run LabellingEngine.
