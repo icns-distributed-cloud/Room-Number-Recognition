@@ -237,14 +237,14 @@ func decodeLabel(value []int) (string, error) {
 	}
 
 	if valueChar[0] == "0" {
-		return "", fmt.Errorf("not a number image")
+		return "", fmt.Errorf("not a number image: [0]==0")
 	}
 	if valueChar[1] == "3" {
 		return valueChar[2] + valueChar[3] + valueChar[4], nil
 	} else if valueChar[1] == "4" {
 		return valueChar[2] + valueChar[3] + valueChar[4] + "-" + valueChar[5], nil
 	}
-	return "", fmt.Errorf("not a number image")
+	return "", fmt.Errorf("not a number image: [1]!=3or4")
 }
 
 func getMostFrequentElem(arr []string) string {
