@@ -3,6 +3,7 @@
 ################
 *.pb
 images/
+.vscode/
 
 ###########################
 ## .gitignore for VSCode ##
