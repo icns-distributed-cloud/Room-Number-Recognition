@@ -15,16 +15,17 @@ import (
 // LabellingEngine is a wrapper for Tensorflow model predictor.
 type LabellingEngine struct {
 	/* Private */
-	model1Path         string
-	model1InputLayer   string
-	model1OutputLayers []string
-	model2InputLayer   string
-	model2OutputLayers []string
-	model2Path         string
-	pathForNoise       string
-	pathForNum         string
-	flagForSaveImg     bool
-	readySignal        chan struct{}
+	model1Path             string
+	model1InputLayer       string
+	model1OutputLayers     []string
+	model2InputLayer       string
+	model2OutputLayers     []string
+	model2Path             string
+	maxOutputChannelLength int
+	pathForNoise           string
+	pathForNum             string
+	flagForSaveImg         bool
+	readySignal            chan struct{}
 	/* Public */
 	Logger      *log.Logger
 	Model1      *models.MLModel
@@ -45,9 +46,21 @@ func (le *LabellingEngine) Init(cfg config.Config, logger *log.Logger) error {
 	le.model2Path = cfg.LabellingEngine.Model2Path
 	le.model2InputLayer = cfg.LabellingEngine.Model2InputLayer
 	le.model2OutputLayers = cfg.LabellingEngine.Model2OutputLayers
+	le.maxOutputChannelLength = cfg.LabellingEngine.MaxOutputChannelLength
 	le.flagForSaveImg = cfg.LabellingEngine.FlagForSaveImg
 	le.pathForNoise = cfg.LabellingEngine.PathForNoise
 	le.pathForNum = cfg.LabellingEngine.PathForNum
+
+	// Warn for saving image
+	if le.flagForSaveImg {
+		le.Logger.Println("WARN: the flag for saving image is now true.")
+		// if _, err := os.Stat(le.pathForNoise); os.IsNotExist(err) {
+		// 	os.Mkdir(le.pathForNoise, 0700)
+		// }
+		// if _, err := os.Stat(le.pathForNum); os.IsNotExist(err) {
+		// 	os.Mkdir(le.pathForNoise, 0700)
+		// }
+	}
 
 	// Create channels
 	le.ImageChan = make(chan *gocv.Mat, 100)
@@ -118,10 +131,16 @@ func (le *LabellingEngine) Run() {
 			}
 		}
 	}()
+	// wg := sync.WaitGroup{}
+	// wg.Add(1)
+	// go func() {
+	// 	le.makeOutput(done)
+	// }()
 
 	le.readySignal <- struct{}{}
 
 	// Main Loop
+	imgIndex := 0
 L2:
 	for {
 		select {
@@ -132,19 +151,22 @@ L2:
 
 		// New image matrix.
 		case img := <-le.ImageChan:
-			go func() {
-				defer img.Close()
+			// go func() {
+			// 	defer img.Close()
 
-				err := le.makeResult(img)
-				if err != nil {
-					fmt.Println(err)
-				}
-			}()
+			err := le.makeResult(img, imgIndex)
+			if err != nil {
+				fmt.Println(err)
+			}
+			img.Close()
+			imgIndex++
+			// }()
 		}
 	}
+	// wg.Wait()
 }
 
-func (le *LabellingEngine) makeResult(img *gocv.Mat) error {
+func (le *LabellingEngine) makeResult(img *gocv.Mat, index int) error {
 	// Predict with checker model.
 	output1, err := le.Model1.Predict(img, "gray")
 	if err != nil {
@@ -152,13 +174,13 @@ func (le *LabellingEngine) makeResult(img *gocv.Mat) error {
 	}
 
 	// If the img doesn't contain number, return nil.
-	isTarget := slice.ArgMax(output1[0])
-	if isTarget == 0 {
+	if isTarget := slice.ArgMax(output1[0]); isTarget == 0 {
+		if le.flagForSaveImg {
+			filepath := fmt.Sprintf("%s/%d.jpg", le.pathForNoise, index)
+			gocv.IMWrite(filepath, *img)
+		}
 		return nil
 	}
-	// if output1[0][0] >= output1[0][1] {
-	// 	return nil
-	// }
 
 	// Predict with svhn model.
 	_output2, err := le.Model2.Predict(img, "rgb")
@@ -175,7 +197,33 @@ func (le *LabellingEngine) makeResult(img *gocv.Mat) error {
 		le.ResultChan <- result
 	}
 
+	if le.flagForSaveImg {
+		filepath := fmt.Sprintf("%s/%d.jpg", le.pathForNum, index)
+		gocv.IMWrite(filepath, *img)
+	}
+
 	return nil
+}
+
+// makeOutput logs the label string which is detected the most.
+func (le *LabellingEngine) makeOutput(done <-chan struct{}) {
+	var queue []string
+loop:
+	for {
+		select {
+		case <-done:
+			break loop
+
+		case output := <-le.ResultChan:
+			queue = append(queue, output)
+
+			if len(queue) >= le.maxOutputChannelLength {
+				fmt.Println(len(queue))
+				le.Logger.Printf("Output : %s\n", getMostFrequentElem(queue))
+				queue = nil
+			}
+		}
+	}
 }
 
 func decodeLabel(value []int) (string, error) {
@@ -197,4 +245,20 @@ func decodeLabel(value []int) (string, error) {
 		return valueChar[2] + valueChar[3] + valueChar[4] + "-" + valueChar[5], nil
 	}
 	return "", fmt.Errorf("not a number image")
+}
+
+func getMostFrequentElem(arr []string) string {
+	temp := make(map[string]int)
+	for idx := range arr {
+		temp[arr[idx]]++
+	}
+	max := 0
+	var output string
+	for k, v := range temp {
+		if max < v {
+			max = v
+			output = k
+		}
+	}
+	return output
 }
