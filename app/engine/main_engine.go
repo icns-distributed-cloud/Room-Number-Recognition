@@ -70,10 +70,11 @@ func (me *MainEngine) DrawBbox(frame *gocv.Mat, prevTime time.Time) time.Time {
 	// Get canny from grayscale image.
 	grayImg := gocv.NewMat()
 	canny := gocv.NewMat()
-	gocv.CvtColor(originImg, &grayImg, gocv.ColorBGRToGray)
-	gocv.Canny(grayImg, &canny, 150, 200) // default 50, 150
 	defer grayImg.Close()
 	defer canny.Close()
+
+	gocv.CvtColor(originImg, &grayImg, gocv.ColorBGRToGray)
+	gocv.Canny(grayImg, &canny, 150, 200) // default 50, 150
 
 	// Get all contour points
 	contours := gocv.FindContours(canny, gocv.RetrievalTree, gocv.ChainApproxTC89L1) // defautl RetrievalList, ChainApproxNone
@@ -140,10 +141,12 @@ func (me *MainEngine) Run() error {
 	window := gocv.NewWindow("Room-Number-Recog")
 	window.ResizeWindow(me.windowWSize, me.windowHSize)
 	defer window.Close()
+	me.Logger.Println("Created new window.")
+
 	loading := gocv.IMRead("./loading.jpg", gocv.IMReadColor)
 	window.IMShow(loading)
 	window.WaitKey(2000)
-	me.Logger.Println("Created new window.")
+	loading.Close()
 
 	// Run LabellingEngine.
 	wg := sync.WaitGroup{}
@@ -175,10 +178,6 @@ L:
 
 		default:
 			// Read frame image
-			// if ok := cam.Read(&frame); !ok {
-			// 	me.Logger.Printf("Cannot read device %v\n", me.deviceNumber)
-			// 	break L
-			// }
 			cam.Read(&frame)
 			if frame.Empty() {
 				errCnt++
@@ -191,7 +190,7 @@ L:
 			// Draw bbox
 			prevTime = me.DrawBbox(&frame, prevTime)
 			window.IMShow(frame)
-			window.WaitKey(10)
+			window.WaitKey(5)
 		}
 	}
 	me.Logger.Println("Main loop has broken.")
@@ -243,5 +242,6 @@ func (me MainEngine) crop(src gocv.Mat, left, top, right, bottom int) gocv.Mat {
 		_bottom = bottom + padding
 	}
 	croppedMat := src.Region(image.Rect(_left, _top, _right, _bottom))
+	defer croppedMat.Close()
 	return croppedMat.Clone()
 }

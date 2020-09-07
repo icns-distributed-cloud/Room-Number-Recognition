@@ -60,11 +60,13 @@ func (model *MLModel) Predict(img *gocv.Mat, color string) ([][]float32, error) 
 	switch color {
 	case "rgb":
 		convertedImg := gocv.NewMat()
+		defer convertedImg.Close()
 		gocv.CvtColor(*img, &convertedImg, gocv.ColorBGRToRGB)
 		return model.predict(&convertedImg)
 
 	case "gray":
 		convertedImg := gocv.NewMat()
+		defer convertedImg.Close()
 		gocv.CvtColor(*img, &convertedImg, gocv.ColorBGRToGray)
 		return model.predict(&convertedImg)
 
