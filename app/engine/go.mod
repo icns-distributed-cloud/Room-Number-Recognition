@@ -12,4 +12,5 @@ require (
 replace (
 	app/config v0.0.0 => ../config
 	app/models v0.0.0 => ../models
+	gocv.io/x/gocv v0.24.0 => ../cv_vendor/gocv
 )
