@@ -97,7 +97,7 @@ func (me *MainEngine) DrawBbox(frame *gocv.Mat, prevTime time.Time) time.Time {
 			}
 
 			area := gocv.ContourArea(contours[_idx])
-			if area < 10 {
+			if area < 20 {
 				return
 			}
 
@@ -206,7 +206,7 @@ func (me MainEngine) filterNoise(x, y, w, h int) (isNoise bool) {
 	if w > 70 || h > 45 || w < 15 {
 		return true
 	}
-	if float32(h/w) > 0.7 || float32(w/h) > 1.0 {
+	if ratio := (float32(h) / float32(w)); ratio < 0.45 || ratio > 0.55 {
 		return true
 	}
 	if h > 40 || w > 70 {
