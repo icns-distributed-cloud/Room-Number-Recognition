@@ -6,19 +6,19 @@
         "window_vertical_size": 480
     },
     "labelling_engine": {
-        "model1_path": "checker_model_0820/checker_model.pb",
-        "model1_input_layer": "input_layer",
-        "model1_output_layers": ["output_layer/Softmax"],
-        "model2_path": "svhn_model_0825/svhn_model.pb",
-        "model2_input_layer": "input_3",
-        "model2_output_layers": [
-            "SM_hasNum_2/Softmax",
-            "SM_digitLen_2/Softmax",
-            "SM_digit1_2/Softmax",
-            "SM_digit2_2/Softmax",
-            "SM_digit3_2/Softmax",
-            "SM_digit4_2/Softmax"
-        ],
+        "model1": {
+            "path": "checker_model_0904/checker_model.pb",
+            "input_layer": "input_layer_1",
+            "output_layers": ["output_layer_1/Softmax"]
+        },
+        "model2": {
+            "weights_path": "svhn_model/svhn-tiny.weights",
+            "cfg_path": "svhn_model/svhn-tiny.cfg",
+            "input_layer": "data",
+            "threshold": 0.5,
+            "nms_threshold": 0.4,
+            "num_classes": 80
+        },
         "max_output_channel_length": 40,
         "flag_for_save_img": false,
         "path_for_noise": "images/noise",

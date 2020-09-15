@@ -15,12 +15,8 @@ import (
 // LabellingEngine is a wrapper for Tensorflow model predictor.
 type LabellingEngine struct {
 	/* Private */
-	model1Path             string
-	model1InputLayer       string
-	model1OutputLayers     []string
-	model2InputLayer       string
-	model2OutputLayers     []string
-	model2Path             string
+	model1Cfg              config.ConfigModel1
+	model2Cfg              config.ConfigModel2
 	maxOutputChannelLength int
 	pathForNoise           string
 	pathForNum             string
@@ -29,7 +25,7 @@ type LabellingEngine struct {
 	/* Public */
 	Logger      *log.Logger
 	Model1      *models.MLModel
-	Model2      *models.MLModel
+	Model2      *models.YOLOModel
 	ImageChan   chan *gocv.Mat
 	ResultChan  chan string
 	CloseSignal chan struct{}
@@ -40,12 +36,8 @@ func (le *LabellingEngine) Init(cfg config.Config, logger *log.Logger) error {
 	le.Logger = logger
 
 	// Load data from Config
-	le.model1Path = cfg.LabellingEngine.Model1Path
-	le.model1InputLayer = cfg.LabellingEngine.Model1InputLayer
-	le.model1OutputLayers = cfg.LabellingEngine.Model1OutputLayers
-	le.model2Path = cfg.LabellingEngine.Model2Path
-	le.model2InputLayer = cfg.LabellingEngine.Model2InputLayer
-	le.model2OutputLayers = cfg.LabellingEngine.Model2OutputLayers
+	le.model1Cfg = cfg.LabellingEngine.Model1
+	le.model2Cfg = cfg.LabellingEngine.Model2
 	le.maxOutputChannelLength = cfg.LabellingEngine.MaxOutputChannelLength
 	le.flagForSaveImg = cfg.LabellingEngine.FlagForSaveImg
 	le.pathForNoise = cfg.LabellingEngine.PathForNoise
@@ -70,20 +62,16 @@ func (le *LabellingEngine) Init(cfg config.Config, logger *log.Logger) error {
 
 	// Load Models
 	var err error
-	le.Model1, err = models.NewMLModel(le.model1Path,
-		le.model1InputLayer,
-		le.model1OutputLayers)
+	le.Model1, err = models.NewMLModel(le.model1Cfg)
 	if err != nil {
 		return err
 	}
-	le.Logger.Println("Model1 loaded.")
-	le.Model2, err = models.NewMLModel(le.model2Path,
-		le.model2InputLayer,
-		le.model2OutputLayers)
+	le.Logger.Println("Model1 (MLModel) loaded.")
+	le.Model2, err = models.NewYOLOModel(le.model2Cfg)
 	if err != nil {
 		return err
 	}
-	le.Logger.Println("Model2 loaded.")
+	le.Logger.Println("Model2 (YOLOModel) loaded.")
 
 	le.Logger.Println("Initiated LabellingEngine successfully.")
 	return nil
@@ -182,20 +170,26 @@ func (le *LabellingEngine) makeResult(img *gocv.Mat, index int) error {
 		return nil
 	}
 
-	// Predict with svhn model.
-	_output2, err := le.Model2.Predict(img, "rgb")
+	// Predict with YOLOModel.
+	output2, err := le.Model2.Predict(img)
 	if err != nil {
 		return err
 	}
-	output2 := make([]int, len(_output2))
-	for idx := range _output2 {
-		output2[idx] = slice.ArgMax(_output2[idx])
-	}
+	// output2 := make([]int, len(_output2))
+	// for idx := range _output2 {
+	// 	output2[idx] = slice.ArgMax(_output2[idx])
+	// }
 
-	result, err := decodeLabel(output2)
-	if err == nil {
-		le.ResultChan <- result
+	// result, err := decodeLabel(output2)
+	// if err == nil {
+	// 	le.ResultChan <- result
+	// }
+
+	result := "=================="
+	for i := range output2 {
+		result += fmt.Sprintf("ClassID: %d / Confidence: %.6f / BBox: %v\n", output2[i].ClassID, output2[i].Confidence, output2[i].BBox)
 	}
+	le.ResultChan <- result
 
 	if le.flagForSaveImg {
 		filepath := fmt.Sprintf("%s/%d.jpg", le.pathForNum, index)

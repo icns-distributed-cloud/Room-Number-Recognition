@@ -1,6 +1,7 @@
 package models
 
 import (
+	"app/config"
 	"image"
 	"sync"
 
@@ -16,11 +17,11 @@ type MLModel struct {
 }
 
 // NewMLModel returns a new MLModel.
-func NewMLModel(filepath string, input string, outputs []string) (*MLModel, error) {
+func NewMLModel(cfg config.ConfigModel1) (*MLModel, error) {
 	model := &MLModel{}
-	model.Model = gocv.ReadNetFromTensorflow(filepath)
-	model.InputLayerName = input
-	model.OutputLayerNames = outputs
+	model.Model = gocv.ReadNetFromTensorflow(cfg.Path)
+	model.InputLayerName = cfg.InputLayer
+	model.OutputLayerNames = cfg.OutputLayers
 	model.mutex = &sync.Mutex{}
 	return model, nil
 }
