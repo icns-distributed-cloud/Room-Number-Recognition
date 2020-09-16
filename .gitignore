@@ -4,6 +4,7 @@
 *.pb
 images/
 .vscode/
+venv/
 
 ###########################
 ## .gitignore for VSCode ##
