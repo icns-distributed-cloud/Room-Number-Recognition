@@ -8,9 +8,6 @@ import (
 	"gocv.io/x/gocv"
 )
 
-const imgWidth = 96
-const imgHeight = 48
-
 // YOLOModel is a wrapper for YOLO Net.
 type YOLOModel struct {
 	/* Private */
@@ -56,6 +53,11 @@ func (model *YOLOModel) Predict(img *gocv.Mat) ([]DigitBox, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	// Get size of image
+	size := img.Size()
+	imgWidth := size[0]
+	imgHeight := size[1]
 
 	// Get bboxes
 	for i := range outs {
