@@ -13,7 +13,7 @@ require (
 	github.com/google/flatbuffers v1.12.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/tensorflow/tensorflow v1.15.3 // indirect
-	gocv.io/x/gocv v0.24.0 // indirect
+	gocv.io/x/gocv v0.25.0
 	gonum.org/v1/gonum v0.8.0 // indirect
 	google.golang.org/protobuf v1.25.0 // indirect
 )
@@ -22,5 +22,4 @@ replace (
 	app/config v0.0.0 => ./config
 	app/engine v0.0.0 => ./engine
 	app/models v0.0.0 => ./models
-	gocv.io/x/gocv v0.24.0 => ./cv_vendor/gocv
 )
