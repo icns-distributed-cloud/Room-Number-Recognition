@@ -9,7 +9,7 @@ def init_logger():
     Initiate main logger.
     '''
     _logger = logging.getLogger('Main')
-    logger.setLevel(logging.INFO)
+    _logger.setLevel(logging.INFO)
     stream_handler = logging.StreamHandler()
     formatter = logging.Formatter(fmt="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
     stream_handler.setLevel(logging.INFO)
@@ -41,5 +41,5 @@ if __name__ == "__main__":
     logger = init_logger()
 
     # main(logger, args)
-    mm = MainEngine(cfg)
-    mm.run()
+    me = MainEngine(cfg)
+    me.run()
