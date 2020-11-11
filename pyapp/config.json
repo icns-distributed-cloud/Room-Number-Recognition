@@ -7,21 +7,16 @@
     },
     "labelling_engine": {
         "model1": {
-            "path": "checker_model_0904/checker_model.pb",
+            "path": "weights/checker_model.pb",
             "input_layer": "input_layer_1",
             "output_layers": ["output_layer_1/Softmax"]
         },
         "model2": {
-            "weights_path": "svhn_model/svhn-tiny.weights",
-            "cfg_path": "svhn_model/svhn-tiny.cfg",
-            "input_layer": "data",
-            "threshold": 0.5,
-            "nms_threshold": 0.4,
-            "num_classes": 80
+            "repository": "icns-distributed-cloud/yolov5-svhn",
+            "function": "svhn"
         },
-        "max_output_channel_length": 40,
-        "flag_for_save_img": false,
-        "path_for_noise": "images/noise",
-        "path_for_num": "images/num"
+        "flag_for_save_img": true,
+        "path_for_noise": "./crop_noise",
+        "path_for_num": "./crop_num"
     }
 }
