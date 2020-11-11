@@ -2,7 +2,10 @@
 ## .gitignore ##
 ################
 *.pb
+*.pt
 images/
+crop_noise/
+crop_num/
 .vscode/
 venv/
 
