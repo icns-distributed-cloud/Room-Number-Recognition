@@ -2,8 +2,12 @@
 ## .gitignore ##
 ################
 *.pb
+*.pt
 images/
-datasets/
+crop_noise/
+crop_num/
+.vscode/
+venv/
 
 ###########################
 ## .gitignore for VSCode ##

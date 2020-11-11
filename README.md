@@ -24,13 +24,18 @@ Room number recognition service for *indoor self-driving car*s. This service ana
 - `train/datasets`: datasets for training
 
 ## Environment
-- Raspberry Pi 4 Model B
-- Raspbian Buster
-- Python 3.7
-- OpenCV 4.2.0
-- Tensorflow 1.15.2
-- Keras 2.3.1
+- Training
+    - CentOS 7.5
+    - Nvidia GTX 1080 Ti
+    - Python 3.7
+    - Tensorflow 1.15.2
+    - Keras 2.3.1
+- Service
+    - Raspberry Pi 4 Model B
+    - Raspbian Buster
+    - Go 1.15.0
+    - OpenCV 4.2.0
 
 ## Todo
-- [ ] Complete the Dockerfile
-- [ ] Change implementation from Python to Go.
+- [x] Complete the Dockerfile
+- [x] Change implementation from Python to Go.

@@ -1,0 +1,22 @@
+{
+    "main_engine": {
+        "device_number": -1,
+        "padding_size": 5,
+        "window_horizontal_size": 640,
+        "window_vertical_size": 480
+    },
+    "labelling_engine": {
+        "model1": {
+            "path": "weights/checker_model.pb",
+            "input_layer": "input_layer_1",
+            "output_layers": ["output_layer_1/Softmax"]
+        },
+        "model2": {
+            "repository": "icns-distributed-cloud/yolov5-svhn",
+            "function": "svhn"
+        },
+        "flag_for_save_img": true,
+        "path_for_noise": "./crop_noise",
+        "path_for_num": "./crop_num"
+    }
+}
