@@ -8,9 +8,10 @@ Room number recognition service for *indoor self-driving car*s. This service ana
 
 ## Training
 ### Checker Model
+.
 
 ### SVHN Model
-SVHN Model is a CNN model based on [YOLOv5-small](https://github.com/ultralytics/yolov5) model, which is trained with [SVHN Dataset](http://ufldl.stanford.edu/housenumbers/)(format 2).
+SVHN Model is a CNN model based on [YOLOv5-small](https://github.com/ultralytics/yolov5) model, which is trained with [SVHN Dataset](http://ufldl.stanford.edu/housenumbers/)(format 2).  
 For more information, visit this repository: [icns-distributed-cloud/YOLOv5-SVHN](https://github.com/icns-distributed-cloud/YOLOv5-SVHN)
 
 ## Project Structure
@@ -28,7 +29,8 @@ For more information, visit this repository: [icns-distributed-cloud/YOLOv5-SVHN
     - CentOS 7.5
     - Nvidia GTX 1080 Ti * 8ea
     - Python 3.8
-    - PyTorch 1.7.0
+    - PyTorch 1.7.0  
+    
 - Service
     - Raspberry Pi 4 Model B
     - Raspbian Buster
