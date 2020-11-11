@@ -15,7 +15,7 @@
             "repository": "icns-distributed-cloud/yolov5-svhn",
             "function": "svhn"
         },
-        "flag_for_save_img": true,
+        "flag_for_save_img": false,
         "path_for_noise": "./crop_noise",
         "path_for_num": "./crop_num"
     }
