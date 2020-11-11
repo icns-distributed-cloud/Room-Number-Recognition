@@ -7,7 +7,7 @@ from labelling_engine import LabellingEngine
 class MainEngine:
     '''
     MainEngine is a class for managing core functions.
-    @params cfg: cfg
+    @param cfg: cfg
     '''
     def __init__(self, cfg):
         # Logging
@@ -20,7 +20,8 @@ class MainEngine:
         self.window_vertical_size = cfg['main_engine']['window_vertical_size']
 
         # Labelling Engine
-        self.lm = LabellingEngine(cfg['labelling_engine'])
+        self.le = LabellingEngine(cfg['labelling_engine'])
+
 
     def init_logger(self):
         '''
@@ -30,7 +31,7 @@ class MainEngine:
         logger.setLevel(logging.INFO)
         self.logger = logger
 
-    def crop(self, image, x, y, w, h):
+    def crop(self, image, x, y, w, h, padding):
         '''
         Return cropped image with padding.
             @param image: image 2D array
@@ -38,18 +39,24 @@ class MainEngine:
             @param y: coordinate for y-axis
             @param w: width
             @param h: height
+            @param padding: padding size
             @return: cropped image array
         '''
-        if x > self.padding_size:
-            x -= self.padding_size
-        if y > self.padding_size:
-            y -= self.padding_size
-        if (w + self.padding_size) < self.window_horizontal_size:
-            w += self.padding_size
-        if (h + self.padding_size) < self.window_vertical_size:
-            h += self.padding_size
+        copied = image.copy()
+        if x > padding:
+            x -= padding
+        if y > padding:
+            y -= padding
+        if (w + padding * 2) < self.window_horizontal_size:
+            w += padding * 2
+        else:
+            w = self.window_horizontal_size
+        if (h + padding * 2) < self.window_vertical_size:
+            h += padding * 2
+        else:
+            h = self.window_vertical_size
 
-        return image[y:(y + h), x:(x + w)]
+        return copied[y:(y + h), x:(x + w)]
 
     def draw_bbox(self, frame, prev_time):
         '''
@@ -77,33 +84,42 @@ class MainEngine:
             if self.filter_noise(x, y, w, h):
                 continue
 
-            # Draw rectangle bbox on original image
-            cropped = self.crop(original_img, x, y, w, h)
-            cv2.rectangle(original_img, (x, y), (x + w, y + h), (0, 0, 255), 2)
-
             # Send cropped RGB image to Labelling Engine
+            cropped = self.crop(original_img, x, y, w, h, self.padding_size)
             cropped = cv2.cvtColor(cropped, cv2.COLOR_BGR2RGB)
             cropped = cv2.resize(cropped, (48, 48), interpolation=cv2.INTER_LINEAR)
-            self.lm.new_tensor(cropped)
+            bigcrop = self.crop(original_img, x, y, w, h, 100)
+            bigcrop = cv2.cvtColor(bigcrop, cv2.COLOR_BGR2RGB)
+            label, ok = self.le.predict(cropped, bigcrop)
+            label_string = label
+            cv2.putText(original_img, label_string, (x, y - 8), cv2.FONT_HERSHEY_COMPLEX_SMALL, \
+                0.9, (0, 0, 255), 1)
+
+            # Draw rectangle bbox on original image
+            cv2.rectangle(original_img, (x, y), (x + w, y + h), (0, 0, 255), 2)
+
+            if not ok:
+                continue
+            print('label:', label)
         
         # Calculate FPS and show FPS string on frame
         current_time = time.time()
         sec = current_time - prev_time
         try:
-            fps = 1/sec
+            fps = round(1/sec, 4)
         except ZeroDivisionError:
             fps = 0
         fps_string = 'FPS : {}'.format(fps)
         cv2.putText(original_img, fps_string, (0, 40), cv2.FONT_HERSHEY_COMPLEX_SMALL, \
             0.8, (0, 255, 0), 1)
-        cv2.imshow('result', original_img)
+        cv2.imshow('Room Number Recognition', original_img)
 
         return current_time
 
     def filter_noise(self, x: int, y: int, w: int, h: int):
         '''
         Returns true if the contour is noise.
-        @params x, y, w, h: size of coutour
+        @param x, y, w, h: size of coutour
         '''
         winH, winW = self.window_horizontal_size, self.window_vertical_size
         ratio = float(h) / float(w)
@@ -126,14 +142,15 @@ class MainEngine:
         Main loop for capturing video and draw bbox.
         '''
         # Start and wait for predicting subprocess
-        self.lm.predict_process.start()
-        while not self.lm.is_ready():
-            self.logger.info('waiting for LabellingEngine..')
-            time.sleep(1)
         self.logger.info('now accessing to camera device..')
+
+        # cv2 window
+        cv2.namedWindow('Room Number Recognition', cv2.WINDOW_NORMAL)
+        cv2.resizeWindow('Room Number Recognition', self.window_horizontal_size, self.window_vertical_size)
 
         # Main loop
         cap = cv2.VideoCapture(self.device_number)
+        prev_time = 1
         while cap.isOpened():
             try:
                 # Get frame
@@ -151,7 +168,6 @@ class MainEngine:
 
         # Release device and wait for closing the subprocess
         cap.release()
-        self.lm.close()
-        self.lm.predict_process.join()
+        self.le.close()
         cv2.destroyAllWindows()
         self.logger.info('process terminated.')
