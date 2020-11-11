@@ -26,21 +26,12 @@ class CheckerModel:
         @return: result
         '''
         gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
-        # gray = self.preprocess(img)
         gray = np.reshape(gray, (48, 48, 1))
         blob = cv2.dnn.blobFromImage(gray, 1./255, (48, 48), (0, 0, 0), False, False)
         self.model.setInput(blob, self.input_layer)
         output = self.model.forward()
         is_target = np.argmax(output[0])
         return True if is_target == 0 else False
-
-    def preprocess(self, rgb_tensor):
-        rgb_tensor = np.squeeze(rgb_tensor)
-        gray = np.dot(rgb_tensor[...,:3], [0.299, 0.587, 0.114])
-        gray = np.reshape(gray, (48, 48, 1))
-        gray /= 255.0
-        gray = gray - gray.mean() # Normalize
-        return gray
 
 class SVHNModel:
     '''
@@ -50,7 +41,7 @@ class SVHNModel:
     def __init__(self, cfg):
         self.repo = cfg['repository']
         self.func = cfg['function']
-        self.model = torch.hub.load(self.repo, self.func)
+        self.model = torch.hub.load(self.repo, self.func).fuse().eval()
         self.model = self.model.autoshape()
 
     def predict(self, img):
@@ -59,8 +50,7 @@ class SVHNModel:
         @param img: rgb image
         @return: label
         '''
-        # _img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        _img = img[:, :, ::-1]
+        _img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         with torch.no_grad():
             prediction = self.model(_img, size=640)
             # print(prediction)
@@ -70,7 +60,6 @@ class SVHNModel:
         boxes = list()
         for pred in prediction:
             for x1, y1, x2, y2, conf, clas in pred: # xyxy, confidence, class
-                # print('pred:', x1, y1, x2, y2, conf, clas)
                 boxes.append({
                     'x1': x1,
                     'y1': y1,
@@ -79,7 +68,6 @@ class SVHNModel:
                     'conf': conf,
                     'class': int(clas)
                 })
-        # print('boxes:', boxes)
 
         boxes = sorted(boxes, key=lambda x: x['x1'])
         label = self.make_label(boxes)
@@ -100,7 +88,7 @@ class SVHNModel:
 
         if len(chars) == 3:
             return ''.join(chars)
-        elif len(chars) == 4:
+        elif len(chars) >= 4:
             return ''.join(chars[:3]) + '-' + chars[3]
         else:
             return ''.join(chars)
@@ -156,7 +144,10 @@ class LabellingEngine:
         '''
         Predict the image.
         @param img: 48*48 rgb image
-        @return: string of the doorplate number. (None when it is noise)
+        @param bigimg:
+        @return: string of the doorplate number.
+            'Noise' when it is noise,
+            'NaN' when the SVHN model failed to predict.
         @return: flag that the image contains numbers
         '''
         is_noise = self.model1.predict(img)
@@ -172,10 +163,6 @@ class LabellingEngine:
             return 'Noise', False
 
         result = self.model2.predict(bigimg)
-        # if self.flag_for_save_img:
-        #     save_img = cv2.cvtColor(bigimg, cv2.COLOR_RGB2BGR)
-        #     cv2.imwrite('./crop_big/{}.png'.format(self.idx), save_img)
-        #     self.idx += 1
         if result is None:
             return 'NaN', False
 
