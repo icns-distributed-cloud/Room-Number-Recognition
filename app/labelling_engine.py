@@ -3,6 +3,7 @@ import glob
 import logging
 import datetime
 from queue import Full, Empty
+from collections import Counter
 from multiprocessing import Process, Queue
 
 import torch
@@ -53,7 +54,6 @@ class SVHNModel:
         _img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         with torch.no_grad():
             prediction = self.model(_img, size=640)
-            # print(prediction)
         if prediction[0] is None:
             return None
         
@@ -109,6 +109,9 @@ class LabellingEngine:
         self.flag_for_save_img = cfg['flag_for_save_img']
         self.path_for_noise = cfg['path_for_noise']
         self.path_for_num = cfg['path_for_num']
+        self.output_queue = []
+        self.output_queue_cap = cfg['output_queue_capacity']
+        self.most_frequent_label = ''
 
         # Init models
         self.model1 = CheckerModel(self.model1_cfg)
@@ -148,6 +151,7 @@ class LabellingEngine:
         @return: string of the doorplate number.
             'Noise' when it is noise,
             'NaN' when the SVHN model failed to predict.
+        @return: the most frequent label
         @return: flag that the image contains numbers
         '''
         is_noise = self.model1.predict(img)
@@ -160,13 +164,38 @@ class LabellingEngine:
             self.idx += 1
 
         if is_noise:
-            return 'Noise', False
+            return 'Noise', self.most_frequent_label, False
 
-        result = self.model2.predict(bigimg)
-        if result is None:
-            return 'NaN', False
+        now = self.model2.predict(bigimg)
+        if now is None:
+            return 'NaN', self.most_frequent_label, False
 
-        return result, True
+        self.most_frequent_label = self.get_most_frequent_label(now)
+        return now, self.most_frequent_label, True
+
+    def get_most_frequent_label(self, now=None):
+        '''
+        Get the most frequent predicted label from output queue.
+        @param now: new label
+        @return: the most frequent label string
+        '''
+        func = lambda q: Counter(q).most_common(1)[0][0]
+        if now is None:
+            if len(self.output_queue) == 0:
+                return ''
+            return func(self.output_queue)
+        
+        self.output_queue.append(now)
+        if len(self.output_queue) > self.output_queue_cap:
+            self.output_queue = self.output_queue[1:]
+        return func(self.output_queue)
+
+    def clear_most_frequent_label(self):
+        '''
+        Clear the most frequent label variable and the output queue.
+        '''
+        self.most_frequent_label = ''
+        self.output_queue.clear()
 
     def close(self):
         '''

@@ -18,10 +18,14 @@ class MainEngine:
         self.padding_size = cfg['main_engine']['padding_size']
         self.window_horizontal_size = cfg['main_engine']['window_horizontal_size']
         self.window_vertical_size = cfg['main_engine']['window_vertical_size']
+        self.fps_queue = []
+        self.fps_queue_cap = cfg['main_engine']['fps_queue_capacity']
+        self.most_frequent_label = ''
+        self.noise_counter = 0
+        self.noise_counter_threshold = cfg['main_engine']['noise_counter_threshold']
 
         # Labelling Engine
         self.le = LabellingEngine(cfg['labelling_engine'])
-
 
     def init_logger(self):
         '''
@@ -66,6 +70,7 @@ class MainEngine:
             @param frame: one frame from VideoCapture (BGR image)
             @param prev_time: time when the previous draw_bbox job finished
             @return: current time
+            @return: True if the frame contains number
         '''
         original_img = frame
         canny = cv2.Canny(cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY), 50, 150)
@@ -77,6 +82,7 @@ class MainEngine:
             coutours, _ = cv2.findContours(canny, cv2.RETR_TREE, cv2.CHAIN_APPROX_TC89_L1)
 
         # Analyze each contour
+        found_number = False
         for contour in coutours:
             # Get rectangle bounding contour
             [x, y, w, h] = cv2.boundingRect(contour)
@@ -90,7 +96,7 @@ class MainEngine:
             cropped = cv2.resize(cropped, (48, 48), interpolation=cv2.INTER_LINEAR)
             bigcrop = self.crop(original_img, x, y, w, h, 100)
             bigcrop = cv2.cvtColor(bigcrop, cv2.COLOR_BGR2RGB)
-            label, ok = self.le.predict(cropped, bigcrop)
+            label, self.most_frequent_label, ok = self.le.predict(cropped, bigcrop)
             label_string = label
             cv2.putText(original_img, label_string, (x, y - 8), cv2.FONT_HERSHEY_COMPLEX_SMALL, \
                 0.9, (0, 0, 255), 1)
@@ -100,21 +106,34 @@ class MainEngine:
 
             if not ok:
                 continue
-            print('label:', label)
+
+            found_number = True
+            print('label: {} / most: {}'.format(label, self.most_frequent_label))
         
         # Calculate FPS and show FPS string on frame
         current_time = time.time()
         sec = current_time - prev_time
-        try:
-            fps = round(1/sec, 4)
-        except ZeroDivisionError:
-            fps = 0
+        fps = self.calc_fps(sec)
         fps_string = 'FPS : {}'.format(fps)
-        cv2.putText(original_img, fps_string, (0, 40), cv2.FONT_HERSHEY_COMPLEX_SMALL, \
+        cv2.putText(original_img, fps_string, (5, 20), cv2.FONT_HERSHEY_COMPLEX_SMALL, \
             0.8, (0, 255, 0), 1)
+
+        # Show the most frequent label
+        freq_string = 'Most Frequent Label : {}'.format(self.most_frequent_label)
+        cv2.putText(original_img, freq_string, (5, 40), cv2.FONT_HERSHEY_COMPLEX_SMALL, \
+            0.8, (0, 255, 0), 1)
+
         cv2.imshow('Room Number Recognition', original_img)
 
-        return current_time
+        return current_time, found_number
+    
+    def clear_most_frequent_label(self):
+        '''
+        Clear noise counter and the most frequent label.
+        '''
+        self.noise_counter = 0
+        self.most_frequent_label = ''
+        self.le.clear_most_frequent_label()
 
     def filter_noise(self, x: int, y: int, w: int, h: int):
         '''
@@ -137,6 +156,23 @@ class MainEngine:
         
         return False
 
+    def calc_fps(self, now_fps=None):
+        '''
+        Returns average FPS.
+        @param now_fps: elapsed time
+        @return: average FPS
+        '''
+        func = lambda q: round(len(q) / sum(q), 1)
+        if now_fps is None:
+            if len(self.fps_queue) == 0:
+                return 1
+            return func(self.fps_queue)
+        
+        self.fps_queue.append(now_fps)
+        if len(self.fps_queue) > self.fps_queue_cap:
+            self.fps_queue = self.fps_queue[1:]
+        return func(self.fps_queue)
+
     def run(self):
         '''
         Main loop for capturing video and draw bbox.
@@ -156,7 +192,11 @@ class MainEngine:
                 # Get frame
                 ret, inp = cap.read()
                 if ret:
-                    prev_time = self.draw_bbox(inp, prev_time)
+                    prev_time, found_number = self.draw_bbox(inp, prev_time)
+                    if not found_number:
+                        self.noise_counter += 1
+                        if self.noise_counter > self.noise_counter_threshold:
+                            self.clear_most_frequent_label()
 
                 # Wait for quit signal
                 if cv2.waitKey(1) & 0xFF == ord('q'):
@@ -168,6 +208,8 @@ class MainEngine:
 
         # Release device and wait for closing the subprocess
         cap.release()
+        self.logger.info('released camera.')
         self.le.close()
+        self.logger.info('closed LabellingEngine.')
         cv2.destroyAllWindows()
-        self.logger.info('process terminated.')
+        self.logger.info('closed all windows.')

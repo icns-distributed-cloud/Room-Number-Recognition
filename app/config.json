@@ -1,9 +1,11 @@
 {
     "main_engine": {
         "device_number": -1,
-        "padding_size": 5,
         "window_horizontal_size": 640,
-        "window_vertical_size": 480
+        "window_vertical_size": 480,
+        "padding_size": 5,
+        "noise_counter_threshold": 90,
+        "fps_queue_capacity": 20
     },
     "labelling_engine": {
         "model1": {
@@ -15,6 +17,7 @@
             "repository": "icns-distributed-cloud/yolov5-svhn",
             "function": "svhn"
         },
+        "output_queue_capacity": 20,
         "flag_for_save_img": false,
         "path_for_noise": "./crop_noise",
         "path_for_num": "./crop_num"
