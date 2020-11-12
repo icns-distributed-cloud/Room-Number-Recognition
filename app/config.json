@@ -21,5 +21,10 @@
         "flag_for_save_img": false,
         "path_for_noise": "./crop_noise",
         "path_for_num": "./crop_num"
+    },
+    "mqtt_engine": {
+        "broker_ip": "",
+        "broker_port": "",
+        "pub_topic": ""
     }
 }

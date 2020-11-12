@@ -107,6 +107,9 @@ class MainEngine:
             if not ok:
                 continue
 
+            # Send msg via serial port
+            print('send 4 to serial')
+
             found_number = True
             print('label: {} / most: {}'.format(label, self.most_frequent_label))
         
