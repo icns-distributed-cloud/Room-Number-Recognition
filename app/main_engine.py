@@ -18,10 +18,11 @@ class MainEngine:
         self.padding_size = cfg['main_engine']['padding_size']
         self.window_horizontal_size = cfg['main_engine']['window_horizontal_size']
         self.window_vertical_size = cfg['main_engine']['window_vertical_size']
+        self.fps_queue = []
+        self.fps_queue_cap = 20
 
         # Labelling Engine
         self.le = LabellingEngine(cfg['labelling_engine'])
-
 
     def init_logger(self):
         '''
@@ -105,10 +106,7 @@ class MainEngine:
         # Calculate FPS and show FPS string on frame
         current_time = time.time()
         sec = current_time - prev_time
-        try:
-            fps = round(1/sec, 4)
-        except ZeroDivisionError:
-            fps = 0
+        fps = self.calc_fps(sec)
         fps_string = 'FPS : {}'.format(fps)
         cv2.putText(original_img, fps_string, (0, 40), cv2.FONT_HERSHEY_COMPLEX_SMALL, \
             0.8, (0, 255, 0), 1)
@@ -136,6 +134,23 @@ class MainEngine:
             return True
         
         return False
+
+    def calc_fps(self, now_fps=None):
+        '''
+        Returns average FPS.
+        @param now_fps: elapsed time
+        @return: average FPS
+        '''
+        func = lambda q: round(len(q) / sum(q), 1)
+        if now_fps is None:
+            if len(self.fps_queue) == 0:
+                return 1
+            return func(self.fps_queue)
+        
+        self.fps_queue.append(now_fps)
+        if len(self.fps_queue) > self.fps_queue_cap:
+            self.fps_queue = self.fps_queue[1:]
+        return func(self.fps_queue)
 
     def run(self):
         '''
