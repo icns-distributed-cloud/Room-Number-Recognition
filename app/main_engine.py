@@ -19,10 +19,10 @@ class MainEngine:
         self.window_horizontal_size = cfg['main_engine']['window_horizontal_size']
         self.window_vertical_size = cfg['main_engine']['window_vertical_size']
         self.fps_queue = []
-        self.fps_queue_cap = 20
+        self.fps_queue_cap = cfg['main_engine']['fps_queue_capacity']
         self.most_frequent_label = ''
         self.noise_counter = 0
-        self.noise_counter_threshold = 60
+        self.noise_counter_threshold = cfg['main_engine']['noise_counter_threshold']
 
         # Labelling Engine
         self.le = LabellingEngine(cfg['labelling_engine'])

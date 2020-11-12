@@ -110,7 +110,7 @@ class LabellingEngine:
         self.path_for_noise = cfg['path_for_noise']
         self.path_for_num = cfg['path_for_num']
         self.output_queue = []
-        self.output_queue_cap = 20
+        self.output_queue_cap = cfg['output_queue_capacity']
         self.most_frequent_label = ''
 
         # Init models
