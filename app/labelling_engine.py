@@ -70,6 +70,8 @@ class SVHNModel:
                 })
 
         boxes = sorted(boxes, key=lambda x: x['x1'])
+        if len(boxes) <= 2:
+            return None
         label = self.make_label(boxes)
         return label
 
@@ -91,7 +93,7 @@ class SVHNModel:
         elif len(chars) >= 4:
             return ''.join(chars[:3]) + '-' + chars[3]
         else:
-            return ''.join(chars)
+            return ''
 
 
 class LabellingEngine:
