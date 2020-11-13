@@ -3,6 +3,7 @@ import logging
 
 import cv2
 from labelling_engine import LabellingEngine
+from serial_engine import SerialEngine
 
 class MainEngine:
     '''
@@ -26,6 +27,7 @@ class MainEngine:
 
         # Labelling Engine
         self.le = LabellingEngine(cfg['labelling_engine'])
+        self.se = SerialEngine('', 9600)
 
     def init_logger(self):
         '''
@@ -109,6 +111,7 @@ class MainEngine:
 
             # Send msg via serial port
             print('send 4 to serial')
+            self.se.write('4')
 
             found_number = True
             print('label: {} / most: {}'.format(label, self.most_frequent_label))
