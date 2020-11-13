@@ -1,7 +1,6 @@
 ################
 ## .gitignore ##
 ################
-*.pb
 *.pt
 images/
 crop_noise/
