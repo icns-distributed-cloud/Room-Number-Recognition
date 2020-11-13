@@ -27,7 +27,7 @@ class MainEngine:
 
         # Labelling Engine
         self.le = LabellingEngine(cfg['labelling_engine'])
-        self.se = SerialEngine('', 9600)
+        self.se = SerialEngine('/dev/ttyS0', 9600)
 
     def init_logger(self):
         '''
@@ -110,8 +110,9 @@ class MainEngine:
                 continue
 
             # Send msg via serial port
-            print('send 4 to serial')
-            self.se.write('4')
+            if self.most_frequent_label == '427':
+                print('send 4 to serial')
+                self.se.write('4')
 
             found_number = True
             print('label: {} / most: {}'.format(label, self.most_frequent_label))
