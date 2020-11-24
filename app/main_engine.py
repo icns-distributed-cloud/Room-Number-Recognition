@@ -3,6 +3,8 @@ import logging
 
 import cv2
 from labelling_engine import LabellingEngine
+# from serial_engine import SerialEngine
+from mqtt_engine import MQTTEngine
 
 class MainEngine:
     '''
@@ -23,9 +25,13 @@ class MainEngine:
         self.most_frequent_label = ''
         self.noise_counter = 0
         self.noise_counter_threshold = cfg['main_engine']['noise_counter_threshold']
+        self.show_on_gui = cfg['main_engine']['show_on_gui']
 
         # Labelling Engine
         self.le = LabellingEngine(cfg['labelling_engine'])
+        # self.se = SerialEngine('/dev/ttyS0', 9600)
+        self.mqtt = MQTTEngine(cfg['mqtt_engine'])
+        self.mqtt.connect()
 
     def init_logger(self):
         '''
@@ -123,7 +129,8 @@ class MainEngine:
         cv2.putText(original_img, freq_string, (5, 40), cv2.FONT_HERSHEY_COMPLEX_SMALL, \
             0.8, (0, 255, 0), 1)
 
-        cv2.imshow('Room Number Recognition', original_img)
+        if self.show_on_gui:
+            cv2.imshow('Room Number Recognition', original_img)
 
         return current_time, found_number
     
@@ -181,8 +188,9 @@ class MainEngine:
         self.logger.info('now accessing to camera device..')
 
         # cv2 window
-        cv2.namedWindow('Room Number Recognition', cv2.WINDOW_NORMAL)
-        cv2.resizeWindow('Room Number Recognition', self.window_horizontal_size, self.window_vertical_size)
+        if self.show_on_gui:
+            cv2.namedWindow('Room Number Recognition', cv2.WINDOW_NORMAL)
+            cv2.resizeWindow('Room Number Recognition', self.window_horizontal_size, self.window_vertical_size)
 
         # Main loop
         cap = cv2.VideoCapture(self.device_number)
@@ -197,6 +205,10 @@ class MainEngine:
                         self.noise_counter += 1
                         if self.noise_counter > self.noise_counter_threshold:
                             self.clear_most_frequent_label()
+                    else:
+                        self.mqtt.publish({
+                            'label': str(self.most_frequent_label)
+                        })
 
                 # Wait for quit signal
                 if cv2.waitKey(1) & 0xFF == ord('q'):
