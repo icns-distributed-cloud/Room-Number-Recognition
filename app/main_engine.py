@@ -3,7 +3,8 @@ import logging
 
 import cv2
 from labelling_engine import LabellingEngine
-from serial_engine import SerialEngine
+# from serial_engine import SerialEngine
+from mqtt_engine import MQTTEngine
 
 class MainEngine:
     '''
@@ -27,7 +28,9 @@ class MainEngine:
 
         # Labelling Engine
         self.le = LabellingEngine(cfg['labelling_engine'])
-        self.se = SerialEngine('/dev/ttyS0', 9600)
+        # self.se = SerialEngine('/dev/ttyS0', 9600)
+        self.mqtt = MQTTEngine(cfg['mqtt_engine'])
+        self.mqtt.connect()
 
     def init_logger(self):
         '''
@@ -110,9 +113,6 @@ class MainEngine:
                 continue
 
             # Send msg via serial port
-            if self.most_frequent_label == '427':
-                print('send 4 to serial')
-                self.se.write('4')
 
             found_number = True
             print('label: {} / most: {}'.format(label, self.most_frequent_label))
@@ -204,6 +204,10 @@ class MainEngine:
                         self.noise_counter += 1
                         if self.noise_counter > self.noise_counter_threshold:
                             self.clear_most_frequent_label()
+                    else:
+                        self.mqtt.publish({
+                            'label': str(self.most_frequent_label)
+                        })
 
                 # Wait for quit signal
                 if cv2.waitKey(1) & 0xFF == ord('q'):
