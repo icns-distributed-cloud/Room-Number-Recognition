@@ -1,11 +1,12 @@
 {
     "main_engine": {
-        "device_number": -1,
+        "device_number": 0,
         "window_horizontal_size": 640,
         "window_vertical_size": 480,
         "padding_size": 5,
         "noise_counter_threshold": 90,
-        "fps_queue_capacity": 20
+        "fps_queue_capacity": 20,
+        "show_on_gui": true
     },
     "labelling_engine": {
         "model1": {
@@ -23,8 +24,8 @@
         "path_for_num": "./crop_num"
     },
     "mqtt_engine": {
-        "broker_ip": "",
-        "broker_port": "",
-        "pub_topic": ""
+        "broker_ip": "13.209.49.61",
+        "broker_port": 1883,
+        "pub_topic": "/room"
     }
 }
