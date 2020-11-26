@@ -152,8 +152,8 @@ class MainEngine:
 
         if w > 70 or h > 40 or w < 15:
             return True
-        if y > 150 or x < 200 or x > 500:
-            return True
+        # if y > 150 or x < 200 or x > 500:
+        #     return True
         if float(h) < float(winH) * 0.03:
             return True
         if float(w) < float(winW) * 0.05:
