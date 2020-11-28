@@ -3,8 +3,8 @@ import logging
 
 import cv2
 from labelling_engine import LabellingEngine
-# from serial_engine import SerialEngine
 from mqtt_engine import MQTTEngine
+from video_capture import BufferlessVideoCapture
 
 class MainEngine:
     '''
@@ -193,7 +193,8 @@ class MainEngine:
             cv2.resizeWindow('Room Number Recognition', self.window_horizontal_size, self.window_vertical_size)
 
         # Main loop
-        cap = cv2.VideoCapture(self.device_number)
+        # cap = cv2.VideoCapture(self.device_number)
+        cap = BufferlessVideoCapture(self.device_number)
         prev_time = 1
         while cap.isOpened():
             try:
